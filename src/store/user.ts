@@ -8,14 +8,14 @@ interface UserState {
   currentRole?: string
   roles: HtyRole[]
   loading: boolean
-  teachers: HtyUser[]
+  users: HtyUser[]
 }
 
 const store = reactive<UserState>({
   currentUser: null,
   roles: [],
   loading: false,
-  teachers: [],
+  users: [],
 })
 
 export default function useUser() {
@@ -82,17 +82,17 @@ export default function useUser() {
     return false
   }
 
-  async function getAllTeachers() {
+  async function getAllUsers() {
     const { r, d, e } = await request({
       url: '/api/v1/uc/find_users_with_info_by_role/TEACHER',
     })
     if (r && Array.isArray(d)) {
-      store.teachers = d.map((u: HtyUser) => ({
+      store.users = d.map((u: HtyUser) => ({
         ...u,
         ...(u.infos?.[0] || {}),
       }))
     } else {
-      store.teachers = []
+      store.users = []
     }
   }
 
@@ -102,26 +102,26 @@ export default function useUser() {
     return undefined
   }
 
-  async function verify(teacherId: string, validate: boolean, rejectReason?: string) {
+  async function verify(userId: string, validate: boolean, rejectReason?: string) {
     const app = await getAppByDomain()
     if (!app) return false
     const { r, d, e } = await request({
       url: '/api/v1/uc/register/verify',
       method: 'POST',
-      data: { hty_id: teacherId, app_id: app.app_id, validate, reject_reason: rejectReason },
+      data: { hty_id: userId, app_id: app.app_id, validate, reject_reason: rejectReason },
     })
     return r
   }
 
-  async function approveTeacher(teacherId: string) {
-    const ok = await verify(teacherId, true)
-    if (ok) await getAllTeachers()
+  async function approveUser(userId: string) {
+    const ok = await verify(userId, true)
+    if (ok) await getAllUsers()
     return ok
   }
 
-  async function rejectTeacher(teacherId: string, reason: string) {
-    const ok = await verify(teacherId, false, reason)
-    if (ok) await getAllTeachers()
+  async function rejectUser(userId: string, reason: string) {
+    const ok = await verify(userId, false, reason)
+    if (ok) await getAllUsers()
     return ok
   }
 
@@ -132,7 +132,7 @@ export default function useUser() {
   function logout() {
     store.currentUser = null
     store.roles = []
-    store.teachers = []
+    store.users = []
     clearTokens()
     window.location.href = '/login'
   }
@@ -143,9 +143,9 @@ export default function useUser() {
     login,
     sudo,
     read,
-    getAllTeachers,
-    approveTeacher,
-    rejectTeacher,
+    getAllUsers,
+    approveUser,
+    rejectUser,
     checkRole,
     logout,
   }

@@ -1,9 +1,9 @@
 <template>
   <div class="page">
     <header class="page-header">
-      <h1>教师认证管理</h1>
+      <h1>用户管理</h1>
       <div class="header-actions">
-        <span v-if="store.currentUser" class="user-name">👤 {{ store.currentUser.real_name }}</span>
+        <span v-if="store.currentUser" class="user-name">{{ store.currentUser.real_name }}</span>
         <button class="btn btn-text" @click="goProfile">个人</button>
         <button class="btn btn-text" @click="logout">退出</button>
       </div>
@@ -22,7 +22,7 @@
     </div>
 
     <div class="search-bar" v-if="activeTab === 'Approved'">
-      <input v-model="keyword" placeholder="搜索教师姓名..." class="search-input" />
+      <input v-model="keyword" placeholder="搜索用户姓名..." class="search-input" />
     </div>
 
     <div class="list">
@@ -66,7 +66,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import useUser from '@/store/user'
 
-const { store, getAllTeachers, approveTeacher, rejectTeacher, logout } = useUser()
+const { store, getAllUsers, approveUser, rejectUser, logout } = useUser()
 const router = useRouter()
 const activeTab = ref('Approved')
 const keyword = ref('')
@@ -75,9 +75,9 @@ const showRejectDialog = ref(false)
 const rejectReason = ref('')
 const rejectTargetId = ref('')
 
-const approvedList = computed(() => store.teachers.filter(x => x.is_registered))
-const waitingList = computed(() => store.teachers.filter(x => !x.is_registered && !x.reject_reason))
-const rejectedList = computed(() => store.teachers.filter(x => !x.is_registered && !!x.reject_reason))
+const approvedList = computed(() => store.users.filter(x => x.is_registered))
+const waitingList = computed(() => store.users.filter(x => !x.is_registered && !x.reject_reason))
+const rejectedList = computed(() => store.users.filter(x => !x.is_registered && !!x.reject_reason))
 
 const filteredList = computed(() => {
   let list = activeTab.value === 'Approved' ? approvedList.value
@@ -91,12 +91,12 @@ const filteredList = computed(() => {
 
 async function fetchData() {
   loading.value = true
-  await getAllTeachers()
+  await getAllUsers()
   loading.value = false
 }
 
 async function approve(id: string) {
-  await approveTeacher(id)
+  await approveUser(id)
 }
 
 function startReject(id: string) {
@@ -113,7 +113,7 @@ function cancelReject() {
 
 async function confirmReject() {
   if (!rejectReason.value.trim()) return
-  await rejectTeacher(rejectTargetId.value, rejectReason.value.trim())
+  await rejectUser(rejectTargetId.value, rejectReason.value.trim())
   cancelReject()
 }
 

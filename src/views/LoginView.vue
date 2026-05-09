@@ -2,7 +2,7 @@
   <div class="login-container">
     <div class="login-card">
       <h1>AuthCore 管理后台</h1>
-      <p class="subtitle">教师认证管理 / 用户管理</p>
+      <p class="subtitle">用户管理</p>
       <div class="login-form">
         <input v-model="unionid" placeholder="union_id（开发模式）" class="form-input" />
         <div class="divider"><span>或</span></div>
