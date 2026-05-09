@@ -21,6 +21,12 @@ const Environments: Record<string, any> = {
     wx_app: '',
     base: '/authcoreadmin/',
   },
+  'admin-root': {
+    main: 'https://admin.moicen.com',
+    host: 'admin.moicen.com',
+    wx_app: '',
+    base: '/',
+  },
 }
 
 const mode = (process.env.mode || 'local') as keyof typeof Environments
