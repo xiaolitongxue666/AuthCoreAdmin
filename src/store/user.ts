@@ -85,7 +85,7 @@ export default function useUser() {
 
   async function getAllUsers() {
     const { r, d, e } = await request({
-      url: '/api/v1/uc/find_users_with_info_by_role/TEACHER',
+      url: '/api/v1/uc/find_all_users',
     })
     if (r && Array.isArray(d)) {
       store.users = d.map((u: HtyUser) => ({
