@@ -5,7 +5,7 @@
 </template>
 
 <script setup lang="ts">
-console.debug('[authcoreadmin] deploy_ver=20260509.005')
+console.debug('[authcoreadmin] deploy_ver=20260510.015')
 </script>
 
 <style>
