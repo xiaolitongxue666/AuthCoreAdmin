@@ -5,7 +5,19 @@
 </template>
 
 <script setup lang="ts">
-console.debug('[authcoreadmin] deploy_ver=20260510.015')
+import { onMounted } from 'vue'
+import useUser from '@/store/user'
+
+const { read } = useUser()
+
+onMounted(async () => {
+  const token = window.localStorage.getItem('Authorization')
+  if (token) {
+    await read()
+  }
+})
+
+console.debug('[authcoreadmin] deploy_ver=20260510.016')
 </script>
 
 <style>
