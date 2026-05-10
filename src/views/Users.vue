@@ -8,6 +8,8 @@
           <router-link to="/apps" class="nav-link" active-class="active">应用</router-link>
           <router-link to="/roles" class="nav-link" active-class="active">角色</router-link>
           <router-link to="/tags" class="nav-link" active-class="active">标签</router-link>
+          <router-link to="/labels" class="nav-link" active-class="active">Label</router-link>
+          <router-link to="/actions" class="nav-link" active-class="active">动作</router-link>
         </nav>
         <span v-if="store.currentUser" class="user-name">{{ store.currentUser.real_name }}</span>
         <button class="btn btn-text" @click="goProfile">个人</button>
