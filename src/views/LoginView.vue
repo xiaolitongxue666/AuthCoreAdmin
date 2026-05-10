@@ -32,15 +32,21 @@ const canLogin = computed(() => unionid.value.trim() || (username.value.trim() &
 async function submit() {
   error.value = ''
   let ok = false
-  if (unionid.value.trim()) {
-    ok = await login(unionid.value.trim())
-  } else {
-    ok = await loginWithPassword(username.value, password.value)
-  }
-  if (ok) {
-    router.push('/')
-  } else {
-    error.value = '登录失败'
+  try {
+    if (unionid.value.trim()) {
+      ok = await login(unionid.value.trim())
+    } else {
+      ok = await loginWithPassword(username.value, password.value)
+    }
+    console.debug('[LoginView] submit result:', ok)
+    if (ok) {
+      router.push('/')
+    } else {
+      error.value = '登录失败，请检查用户名和密码'
+    }
+  } catch (e: any) {
+    console.error('[LoginView] submit error:', e)
+    error.value = '登录异常: ' + (e?.message || e)
   }
 }
 </script>
