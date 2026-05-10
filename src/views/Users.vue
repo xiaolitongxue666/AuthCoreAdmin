@@ -67,7 +67,7 @@
           <div v-if="!item.infos?.length" class="detail-empty">无关联应用</div>
           <div v-for="info in item.infos" :key="info.id" class="app-info-card">
             <div class="app-info-header">
-              <span class="app-domain">{{ info.app_id }}</span>
+              <span class="app-domain">{{ appNameMap[info.app_id] || info.app_id }}</span>
               <span :class="['status-badge', info.is_registered ? 'registered' : 'pending']">
                 {{ info.is_registered ? '已认证' : '未认证' }}
               </span>
@@ -93,7 +93,7 @@
     <!-- Edit app detail modal -->
     <div v-if="showEditApp" class="dialog-overlay" @click.self="closeEditApp">
       <div class="dialog">
-        <h3>编辑角色 | {{ editForm.app_id }}</h3>
+        <h3>编辑角色 | {{ appNameMap[editForm.app_id] || editForm.app_id }}</h3>
         <div class="form-group">
           <label class="form-label">认证状态</label>
           <div class="radio-group">
@@ -142,9 +142,20 @@ const { store, read, getAllUsers, approveUser, rejectUser, logout } = useUser()
 const router = useRouter()
 import request from '@/utils/request'
 import useRole from '@/store/role'
+import useApp from '@/store/app'
 
 const { store: roleStore, fetchAll: fetchRoles } = useRole()
 const allRoles = computed(() => roleStore.list)
+const { store: appStore, fetchAll: fetchApps } = useApp()
+
+// Map app_id to app description/name
+const appNameMap = computed(() => {
+  const map: Record<string, string> = {}
+  for (const app of appStore.list) {
+    map[app.app_id] = app.app_desc || app.domain || app.app_id
+  }
+  return map
+})
 
 const showEditApp = ref(false)
 const editForm = reactive<{ hty_id: string; user_app_info_id: string; app_id: string; is_registered: boolean }>({
@@ -242,7 +253,7 @@ const filteredList = computed(() => {
 
 async function fetchData() {
   loading.value = true
-  await getAllUsers()
+  await Promise.all([getAllUsers(), fetchApps()])
   loading.value = false
 }
 
