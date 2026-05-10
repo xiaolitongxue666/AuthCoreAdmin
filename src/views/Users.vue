@@ -36,23 +36,50 @@
     <div class="list">
       <div v-if="loading" class="loading">加载中...</div>
       <div v-else-if="filteredList.length === 0" class="empty">暂无数据</div>
-      <div v-for="item in filteredList" :key="item.hty_id" class="card">
-        <div class="card-left">
-          <div class="avatar">{{ (item.real_name || '?')[0] }}</div>
-        </div>
-        <div class="card-body">
-          <div class="card-name">{{ item.real_name }}<span v-if="item.meta?.nickName" class="nickname"> ({{ item.meta.nickName }})</span></div>
-          <div class="card-meta">
-            <span class="tag" :class="item.enabled ? 'tag-active' : 'tag-disabled'">
-              {{ item.enabled ? '已启用' : '未启用' }}
-            </span>
+      <template v-for="item in filteredList" :key="item.hty_id">
+        <div class="card" :class="{ expanded: openRows.has(item.hty_id) }">
+          <div class="card-toggle" @click="toggleRow(item.hty_id)">
+            <span class="toggle-icon">{{ openRows.has(item.hty_id) ? '−' : '+' }}</span>
+          </div>
+          <div class="card-left">
+            <div class="avatar">{{ (item.real_name || '?')[0] }}</div>
+          </div>
+          <div class="card-body">
+            <div class="card-name">{{ item.real_name }}<span v-if="item.meta?.nickName" class="nickname"> ({{ item.meta.nickName }})</span></div>
+            <div class="card-meta">
+              <span class="tag" :class="item.enabled ? 'tag-active' : 'tag-disabled'">
+                {{ item.enabled ? '已启用' : '未启用' }}
+              </span>
+              <span v-if="item.union_id" class="tag tag-unionid">unionid</span>
+            </div>
+          </div>
+          <div class="card-actions" v-if="activeTab === 'Waiting'">
+            <button class="btn btn-sm btn-approve" :disabled="!item.enabled" @click="approve(item.hty_id)">通过</button>
+            <button class="btn btn-sm btn-reject" :disabled="!item.enabled" @click="startReject(item.hty_id)">驳回</button>
           </div>
         </div>
-        <div class="card-actions" v-if="activeTab === 'Waiting'">
-          <button class="btn btn-sm btn-approve" :disabled="!item.enabled" @click="approve(item.hty_id)">通过</button>
-          <button class="btn btn-sm btn-reject" :disabled="!item.enabled" @click="startReject(item.hty_id)">驳回</button>
+        <!-- Expandable detail: user app infos -->
+        <div v-if="openRows.has(item.hty_id)" class="user-detail">
+          <div v-if="!item.infos?.length" class="detail-empty">无关联应用</div>
+          <div v-for="info in item.infos" :key="info.id" class="app-info-card">
+            <div class="app-info-header">
+              <span class="app-domain">{{ info.app_id }}</span>
+              <span :class="['status-badge', info.is_registered ? 'registered' : 'pending']">
+                {{ info.is_registered ? '已认证' : '未认证' }}
+              </span>
+            </div>
+            <div class="app-info-body">
+              <div class="info-row"><label>用户名</label><span>{{ info.username || '-' }}</span></div>
+              <div class="info-row"><label>角色</label>
+                <div class="role-list">
+                  <span v-for="r in info.roles" :key="r.hty_role_id" class="mini-tag">{{ r.role_key }}</span>
+                  <span v-if="!info.roles?.length" class="text-muted">-</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+      </template>
     </div>
 
     <!-- Reject dialog -->
@@ -74,7 +101,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import useUser from '@/store/user'
 
-const { store, getAllUsers, approveUser, rejectUser, logout } = useUser()
+const { store, read, getAllUsers, approveUser, rejectUser, logout } = useUser()
 const router = useRouter()
 const activeTab = ref('Approved')
 const keyword = ref('')
@@ -82,6 +109,15 @@ const loading = ref(false)
 const showRejectDialog = ref(false)
 const rejectReason = ref('')
 const rejectTargetId = ref('')
+const openRows = ref(new Set<string>())
+
+function toggleRow(id: string) {
+  const s = openRows.value
+  if (s.has(id)) s.delete(id)
+  else s.add(id)
+  // Trigger reactivity by replacing the Set
+  openRows.value = new Set(s)
+}
 
 const approvedList = computed(() => store.users.filter(x => x.is_registered))
 const waitingList = computed(() => store.users.filter(x => !x.is_registered && !x.reject_reason))
@@ -129,10 +165,14 @@ function goProfile() {
   router.push('/profile')
 }
 
-onMounted(() => {
+onMounted(async () => {
   if (!store.currentUser) {
-    router.push('/login')
-    return
+    // Try to load from saved token first
+    const ok = await read()
+    if (!ok) {
+      router.push('/login')
+      return
+    }
   }
   fetchData()
 })
@@ -180,4 +220,25 @@ onMounted(() => {
 .dialog-textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; resize: vertical; font-family: inherit; outline: none; }
 .dialog-textarea:focus { border-color: #667eea; }
 .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+
+/* Expandable user detail */
+.card-toggle { flex-shrink: 0; cursor: pointer; width: 24px; text-align: center; color: #999; font-size: 18px; font-weight: 600; user-select: none; }
+.card-toggle:hover { color: #667eea; }
+.card.expanded { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+.user-detail { background: #fafafa; border: 1px solid #eee; border-top: none; border-radius: 0 0 10px 10px; padding: 12px 16px; margin-top: -8px; margin-bottom: 8px; }
+.detail-empty { text-align: center; padding: 16px; color: #999; font-size: 13px; }
+.app-info-card { background: white; border-radius: 8px; padding: 10px 14px; margin-bottom: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+.app-info-card:last-child { margin-bottom: 0; }
+.app-info-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.app-domain { font-size: 13px; font-weight: 600; color: #333; font-family: monospace; }
+.status-badge { padding: 1px 8px; border-radius: 8px; font-size: 11px; }
+.status-badge.registered { background: #e8f5e9; color: #2e7d32; }
+.status-badge.pending { background: #fff3e0; color: #e65100; }
+.app-info-body { }
+.info-row { display: flex; gap: 8px; font-size: 12px; margin-bottom: 4px; }
+.info-row label { color: #999; min-width: 40px; flex-shrink: 0; }
+.role-list { display: flex; gap: 3px; flex-wrap: wrap; }
+.mini-tag { padding: 1px 6px; background: #e3f2fd; color: #1565c0; border-radius: 6px; font-size: 11px; }
+.tag-unionid { background: #f3e5f5; color: #7b1fa2; }
+.text-muted { color: #999; }
 </style>
