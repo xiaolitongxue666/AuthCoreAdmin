@@ -3,6 +3,10 @@
     <header class="page-header">
       <h1>用户管理</h1>
       <div class="header-actions">
+        <nav class="nav-links">
+          <router-link to="/users" class="nav-link" active-class="active">用户</router-link>
+          <router-link to="/apps" class="nav-link" active-class="active">应用</router-link>
+        </nav>
         <span v-if="store.currentUser" class="user-name">{{ store.currentUser.real_name }}</span>
         <button class="btn btn-text" @click="goProfile">个人</button>
         <button class="btn btn-text" @click="logout">退出</button>
@@ -137,6 +141,9 @@ onMounted(() => {
 .header-actions { display: flex; align-items: center; gap: 8px; }
 .user-name { color: #666; font-size: 14px; }
 .btn-text { background: none; border: none; color: #1a73e8; cursor: pointer; font-size: 14px; padding: 4px 8px; }
+.nav-links { display: flex; gap: 4px; margin-right: 12px; }
+.nav-link { padding: 6px 14px; border-radius: 6px; font-size: 13px; color: #666; text-decoration: none; }
+.nav-link.active { background: #667eea; color: white; }
 .tab-bar { display: flex; gap: 8px; margin-bottom: 12px; }
 .tab { padding: 8px 20px; border: 1px solid #ddd; border-radius: 20px; background: white; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 6px; }
 .tab.active { background: #667eea; color: white; border-color: #667eea; }

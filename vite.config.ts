@@ -3,7 +3,7 @@ import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
 
 const Environments: Record<string, any> = {
-  local: {
+  dev: {
     main: 'http://admin.localhost:8088',
     host: 'admin.localhost:8088',
     wx_app: '',
@@ -15,9 +15,15 @@ const Environments: Record<string, any> = {
     wx_app: '',
     base: '/admin/',
   },
+  moicen: {
+    main: '',
+    host: 'admin.moicen.com',
+    wx_app: '',
+    base: '/authcoreadmin/',
+  },
 }
 
-const mode = (process.env.mode || 'local') as keyof typeof Environments
+const mode = (process.env.mode || 'dev') as keyof typeof Environments
 const modeConfig = Environments[mode] || {}
 
 // Load env files (Vite auto-loads .env.{mode} when mode is set)
