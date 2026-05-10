@@ -42,16 +42,19 @@ import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import useUser from '@/store/user'
 
-const { store, logout } = useUser()
+const { store, read, logout } = useUser()
 const router = useRouter()
 
 function goBack() {
   router.push('/')
 }
 
-onMounted(() => {
+onMounted(async () => {
   if (!store.currentUser) {
-    router.push('/login')
+    const ok = await read()
+    if (!ok) {
+      router.push('/login')
+    }
   }
 })
 </script>
