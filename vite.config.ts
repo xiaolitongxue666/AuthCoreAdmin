@@ -19,7 +19,7 @@ const Environments: Record<string, any> = {
     main: '',
     host: 'admin.moicen.com',
     wx_app: '',
-    base: '/authcoreadmin/',
+    base: '/',
   },
 }
 
