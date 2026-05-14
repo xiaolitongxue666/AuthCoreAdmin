@@ -1,6 +1,7 @@
 import { fileURLToPath, URL } from 'node:url'
 import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
+// using @tailwindcss/postcss via postcss.config.js
 
 const Environments: Record<string, any> = {
   dev: {

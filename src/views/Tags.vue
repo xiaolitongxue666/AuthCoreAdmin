@@ -1,38 +1,32 @@
 <template>
-  <div class="page">
-    <header class="page-header">
+  <div>
+    <div class="flex justify-between items-center mb-4">
       <h1>标签管理</h1>
-      <div class="header-actions">
-        <button class="btn btn-primary" @click="openCreate">新增标签</button>
-      </div>
-    </header>
-
-    <div class="search-bar">
-      <input v-model="keyword" placeholder="搜索标签名称..." class="search-input" />
+      <button class="bg-primary text-white px-4 py-2 rounded text-sm cursor-pointer border-0" @click="openCreate">新增标签</button>
     </div>
 
-    <div v-if="loading" class="loading">加载中...</div>
-    <div v-else-if="filteredList.length === 0" class="empty">暂无数据</div>
-    <div v-else class="tag-list">
-      <div v-for="tag in filteredList" :key="tag.tag_id" class="tag-card">
-        <span class="tag-name">{{ tag.tag_name }}</span>
-        <div class="card-actions">
-          <button class="btn btn-sm btn-danger" @click="deleteTag(tag)">删除</button>
-        </div>
+    <input v-model="keyword" placeholder="搜索标签名称..." class="w-full border border-border rounded-lg px-4 py-2.5 text-sm outline-none focus:border-primary mb-4" />
+
+    <div v-if="loading" class="text-center py-10 text-text-muted">加载中...</div>
+    <div v-else-if="filteredList.length === 0" class="text-center py-10 text-text-muted">暂无数据</div>
+    <div v-else class="flex flex-col gap-1.5">
+      <div v-for="tag in filteredList" :key="tag.tag_id" class="flex justify-between items-center bg-surface rounded-lg px-4 py-2.5 shadow-sm">
+        <span class="text-sm font-medium text-text">{{ tag.tag_name }}</span>
+        <button class="bg-red-50 text-red-600 px-3 py-1.5 rounded text-xs cursor-pointer border-0" @click="deleteTag(tag)">删除</button>
       </div>
     </div>
 
     <!-- Create modal -->
-    <div v-if="showModal" class="dialog-overlay" @click.self="closeModal">
-      <div class="dialog">
+    <div v-if="showModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50" @click.self="closeModal">
+      <div class="bg-surface rounded-xl p-6 w-[90%] max-w-md">
         <h3>新增标签</h3>
-        <div class="form-group">
-          <label class="form-label">标签名称</label>
-          <input v-model="form.tag_name" class="form-input" placeholder="输入标签名称" @keyup.enter="submit" />
+        <div class="mt-4">
+          <label class="block text-xs font-semibold text-text mb-1">标签名称</label>
+          <input v-model="form.tag_name" class="w-full border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-primary" placeholder="输入标签名称" @keyup.enter="submit" />
         </div>
-        <div class="dialog-actions">
-          <button class="btn" @click="closeModal">取消</button>
-          <button class="btn btn-primary" @click="submit" :disabled="!form.tag_name?.trim()">保存</button>
+        <div class="flex justify-end gap-2 mt-4">
+          <button class="bg-gray-100 text-gray-700 px-4 py-2 rounded text-sm cursor-pointer border-0" @click="closeModal">取消</button>
+          <button class="bg-primary text-white px-4 py-2 rounded text-sm cursor-pointer border-0" @click="submit" :disabled="!form.tag_name?.trim()">保存</button>
         </div>
       </div>
     </div>
@@ -98,30 +92,3 @@ async function deleteTag(tag: HtyTag) {
 
 onMounted(fetchTags)
 </script>
-
-<style scoped>
-.page { max-width: 600px; margin: 0 auto; padding: 0 16px 24px; }
-.page-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; }
-.page-header h1 { font-size: 20px; }
-.header-actions { display: flex; gap: 8px; }
-.search-bar { margin-bottom: 16px; }
-.search-input { width: 100%; padding: 10px 16px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; outline: none; }
-.search-input:focus { border-color: #667eea; }
-.loading, .empty { text-align: center; padding: 40px; color: #999; }
-.tag-list { display: flex; flex-direction: column; gap: 6px; }
-.tag-card { display: flex; justify-content: space-between; align-items: center; background: white; border-radius: 8px; padding: 10px 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-.tag-name { font-size: 14px; font-weight: 500; color: #333; }
-.card-actions { display: flex; gap: 6px; }
-.btn { padding: 8px 16px; border: none; border-radius: 6px; font-size: 13px; cursor: pointer; background: #f0f0f0; color: #333; }
-.btn-sm { padding: 5px 12px; font-size: 12px; }
-.btn-primary { background: #667eea; color: white; }
-.btn-danger { background: #fce4ec; color: #c62828; }
-.dialog-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 100; }
-.dialog { background: white; border-radius: 12px; padding: 24px; width: 90%; max-width: 400px; }
-.dialog h3 { font-size: 16px; margin-bottom: 16px; }
-.form-group { margin-bottom: 14px; }
-.form-label { display: block; font-size: 13px; font-weight: 600; color: #333; margin-bottom: 4px; }
-.form-input { width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; outline: none; }
-.form-input:focus { border-color: #667eea; }
-.dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
-</style>
