@@ -47,7 +47,10 @@ export default async function request({ url = '', method = 'get', data, params, 
 
     if (status === 401) {
       clearTokens()
-      window.location.href = loginPath()
+      const loginUrl = loginPath()
+      if (window.location.pathname !== loginUrl) {
+        window.location.href = loginUrl
+      }
       return { r: false, e: '登录已过期' }
     }
 
