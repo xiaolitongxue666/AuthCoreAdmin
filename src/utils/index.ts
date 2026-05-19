@@ -14,3 +14,8 @@ export function clearTokens() {
   window.localStorage.removeItem(HtyAuthToken)
   window.localStorage.removeItem(HtySudoToken)
 }
+
+export function loginPath() {
+  const baseUrl = import.meta.env.BASE_URL || '/'
+  return `${baseUrl.replace(/\/?$/, '/')}login`
+}

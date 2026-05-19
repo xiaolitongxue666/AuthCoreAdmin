@@ -1,6 +1,6 @@
 import { reactive } from 'vue'
 import request from '@/utils/request'
-import { saveToken, clearTokens, HtySudoToken } from '@/utils/index'
+import { saveToken, clearTokens, HtySudoToken, loginPath } from '@/utils/index'
 import type { HtyUser, HtyRole, HtyApp } from '@/types'
 
 interface UserState {
@@ -135,7 +135,7 @@ export default function useUser() {
     store.roles = []
     store.users = []
     clearTokens()
-    window.location.href = '/login'
+    window.location.href = loginPath()
   }
 
   return {

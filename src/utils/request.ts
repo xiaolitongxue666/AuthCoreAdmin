@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { HtyAuthToken, HtySudoToken, HtyHostHeader, getToken, clearTokens } from './index'
+import { HtyAuthToken, HtySudoToken, HtyHostHeader, getToken, clearTokens, loginPath } from './index'
 
 const axiosInstance = axios.create({
   withCredentials: true,
@@ -47,7 +47,7 @@ export default async function request({ url = '', method = 'get', data, params, 
 
     if (status === 401) {
       clearTokens()
-      window.location.href = '/login'
+      window.location.href = loginPath()
       return { r: false, e: '登录已过期' }
     }
 
