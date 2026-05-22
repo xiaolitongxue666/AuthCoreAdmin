@@ -48,7 +48,8 @@ export default async function request({ url = '', method = 'get', data, params, 
     if (status === 401) {
       clearTokens()
       const loginUrl = loginPath()
-      if (window.location.pathname !== loginUrl) {
+      const onOAuthCallback = window.location.pathname.replace(/\/$/, '').endsWith('/wx-login')
+      if (!onOAuthCallback && window.location.pathname !== loginUrl) {
         window.location.href = loginUrl
       }
       return { r: false, e: '登录已过期' }

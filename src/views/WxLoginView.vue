@@ -6,12 +6,10 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
 import useUser from '@/store/user'
 import { loginPath } from '@/utils/index'
 
 const { wx_login } = useUser()
-const router = useRouter()
 const message = ref('登录中...')
 
 onMounted(async () => {
@@ -25,7 +23,7 @@ onMounted(async () => {
 
   const result = await wx_login(code)
   if (result.ok) {
-    await router.push('/')
+    window.location.replace(`${import.meta.env.BASE_URL || '/'}`.replace(/\/?$/, '/'))
     return
   }
 
