@@ -9,6 +9,11 @@ const router = createRouter({
       component: () => import('@/views/LoginView.vue'),
     },
     {
+      path: '/wx-login',
+      name: 'wx-login',
+      component: () => import('@/views/WxLoginView.vue'),
+    },
+    {
       path: '/',
       name: 'home',
       component: () => import('@/views/Users.vue'),
@@ -53,7 +58,7 @@ const router = createRouter({
 
 router.beforeEach((to, _from, next) => {
   const token = window.localStorage.getItem('Authorization')
-  if (to.name !== 'login' && !token) {
+  if (to.name !== 'login' && to.name !== 'wx-login' && !token) {
     next('/login')
   } else {
     next()

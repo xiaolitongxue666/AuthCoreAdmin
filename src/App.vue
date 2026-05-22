@@ -40,11 +40,11 @@ import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import useUser from '@/store/user'
 
-const { store, read, logout } = useUser()
+const { store, read, logout, hasAdminAccess } = useUser()
 const route = useRoute()
 const router = useRouter()
 
-const isLoginPage = computed(() => route.path === '/login')
+const isLoginPage = computed(() => route.name === 'login' || route.name === 'wx-login')
 
 const navRoutes = [
   { path: '/users', name: '用户管理' },
@@ -57,10 +57,16 @@ const navRoutes = [
 ]
 
 onMounted(async () => {
-  console.debug('[authcoreadmin] deploy_ver=20260513.001')
-  if (!store.currentUser && route.path !== '/login') {
+  console.debug('[authcoreadmin] deploy_ver=20260520.001')
+  if (!store.currentUser && route.name !== 'login' && route.name !== 'wx-login') {
     const ok = await read()
-    if (!ok) router.push('/login')
+    if (!ok) {
+      router.push('/login')
+      return
+    }
+    if (!hasAdminAccess()) {
+      logout()
+    }
   }
 })
 </script>
