@@ -1,0 +1,25 @@
+<template>
+  <div class="flex items-center justify-center min-h-screen" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%)">
+    <div class="bg-surface rounded-2xl p-10 shadow-xl text-center w-[400px]">
+      <h1 class="text-2xl mb-2 text-text font-semibold">AuthCore 管理后台</h1>
+      <p class="text-text-muted mb-6 text-sm">请使用微信扫码登录（需管理员角色）</p>
+      <div id="login-qr" class="flex justify-center my-4 min-h-[400px]"></div>
+      <p v-if="error" class="text-danger mt-3 text-sm">{{ error }}</p>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { nextTick, onMounted, ref } from 'vue'
+import { mountWxLoginQr } from '@/utils/wxLogin'
+
+const error = ref('')
+
+onMounted(() => {
+  nextTick(() => {
+    if (!mountWxLoginQr('login-qr')) {
+      error.value = '微信登录未配置（构建时缺少 WX_APP）'
+    }
+  })
+})
+</script>

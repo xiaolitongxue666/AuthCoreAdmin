@@ -57,7 +57,7 @@ const navRoutes = [
 ]
 
 onMounted(async () => {
-  console.debug('[authcoreadmin] deploy_ver=20260520.001')
+  console.debug('[authcoreadmin] deploy_ver=20260522.001')
   if (!store.currentUser && route.name !== 'login' && route.name !== 'wx-login') {
     const ok = await read()
     if (!ok) {

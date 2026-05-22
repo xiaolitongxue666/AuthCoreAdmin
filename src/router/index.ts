@@ -6,7 +6,9 @@ const router = createRouter({
     {
       path: '/login',
       name: 'login',
-      component: () => import('@/views/LoginView.vue'),
+      component: LOGIN_MODE === 'wx'
+        ? () => import('@/views/WxQrLoginView.vue')
+        : () => import('@/views/PasswordLoginView.vue'),
     },
     {
       path: '/wx-login',

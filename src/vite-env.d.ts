@@ -6,5 +6,5 @@ declare const WX_APP: string
 declare const WX_REDIRECT_HOST: string
 declare const WX_LOGIN_BRIDGE_PATH: string
 declare const ADMIN_ALLOWED_ROLE_KEYS: string
-declare const ENABLE_PASSWORD_LOGIN: string
+declare const LOGIN_MODE: 'wx' | 'password'
 declare const ENABLE_DEV_UNIONID_LOGIN: string
