@@ -30,25 +30,56 @@ function hasAdminAccess(): boolean {
   return store.roles.some((r) => allowed.includes(r.role_key))
 }
 
-async function finalizeAdminLogin(): Promise<LoginResult> {
-  const sudoOk = await sudo()
-  if (!sudoOk) {
-    clearTokens()
-    return { ok: false, error: '无法获取管理员权限（sudo 失败）' }
-  }
-  const readOk = await read()
-  if (!readOk) {
-    clearTokens()
-    return { ok: false, error: '无法读取用户信息' }
-  }
-  if (!hasAdminAccess()) {
-    clearTokens()
-    return { ok: false, error: `需要以下角色之一才可进入管理后台：${adminRoleKeys().join('、')}` }
-  }
-  return { ok: true }
-}
-
 export default function useUser() {
+  async function sudo() {
+    store.loading = true
+    const { r, d, e } = await request({
+      url: '/api/v1/uc/sudo',
+      method: 'POST',
+    })
+    store.loading = false
+    if (r && d) {
+      window.localStorage.setItem(HtySudoToken, d)
+      return true
+    }
+    return false
+  }
+
+  async function read() {
+    store.loading = true
+    const { r, d, e } = await request({
+      url: '/api/v1/uc/find_user_with_info_by_token',
+    })
+    store.loading = false
+    if (r && d) {
+      store.currentUser = d as HtyUser
+      const userApp = d.infos?.[0]
+      if (userApp?.roles) {
+        store.roles = userApp.roles
+      }
+      return true
+    }
+    return false
+  }
+
+  async function finalizeAdminLogin(): Promise<LoginResult> {
+    const sudoOk = await sudo()
+    if (!sudoOk) {
+      clearTokens()
+      return { ok: false, error: '无法获取管理员权限（sudo 失败）' }
+    }
+    const readOk = await read()
+    if (!readOk) {
+      clearTokens()
+      return { ok: false, error: '无法读取用户信息' }
+    }
+    if (!hasAdminAccess()) {
+      clearTokens()
+      return { ok: false, error: `需要以下角色之一才可进入管理后台：${adminRoleKeys().join('、')}` }
+    }
+    return { ok: true }
+  }
+
   async function loginWithPassword(username: string, password: string): Promise<LoginResult> {
     store.loading = true
     const { r, d } = await request({
@@ -91,37 +122,6 @@ export default function useUser() {
       return finalizeAdminLogin()
     }
     return { ok: false, error: '微信登录失败，请确认账号已注册且具备管理员角色' }
-  }
-
-  async function sudo() {
-    store.loading = true
-    const { r, d, e } = await request({
-      url: '/api/v1/uc/sudo',
-      method: 'POST',
-    })
-    store.loading = false
-    if (r && d) {
-      window.localStorage.setItem(HtySudoToken, d)
-      return true
-    }
-    return false
-  }
-
-  async function read() {
-    store.loading = true
-    const { r, d, e } = await request({
-      url: '/api/v1/uc/find_user_with_info_by_token',
-    })
-    store.loading = false
-    if (r && d) {
-      store.currentUser = d as HtyUser
-      const userApp = d.infos?.[0]
-      if (userApp?.roles) {
-        store.roles = userApp.roles
-      }
-      return true
-    }
-    return false
   }
 
   async function getAllUsers() {
