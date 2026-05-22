@@ -4,6 +4,13 @@
       <h1 class="text-xl font-semibold">用户管理</h1>
     </div>
 
+    <div v-if="flashMessage" class="mb-3 px-3 py-2 rounded-lg text-sm bg-green-50 text-green-800 border border-green-200">
+      {{ flashMessage }}
+    </div>
+    <div v-if="actionError" class="mb-3 px-3 py-2 rounded-lg text-sm bg-red-50 text-red-700 border border-red-200">
+      {{ actionError }}
+    </div>
+
     <div class="flex gap-2 mb-3">
       <button :class="['px-4 py-1.5 rounded-full text-sm border border-border bg-surface cursor-pointer flex items-center gap-1.5',
         activeTab === 'Approved' ? '!bg-primary !text-white !border-primary' : '']"
@@ -59,34 +66,34 @@
           </div>
           <div class="flex-1 min-w-0">
             <div class="text-sm font-medium">{{ item.real_name }}<span v-if="item.meta?.nickName" class="text-text-muted text-xs"> ({{ item.meta.nickName }})</span></div>
-            <div class="mt-1 flex gap-1.5">
+            <div class="mt-1 flex gap-1.5 flex-wrap">
               <span :class="['inline-block px-2 py-0.5 rounded-full text-xs',
                 item.enabled ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500']">
                 {{ item.enabled ? '已启用' : '未启用' }}
               </span>
               <span v-if="item.union_id" class="inline-block px-2 py-0.5 rounded-full text-xs bg-purple-50 text-purple-700">unionid</span>
+              <span v-if="pendingInfos(item).length" class="inline-block px-2 py-0.5 rounded-full text-xs bg-orange-50 text-orange-800">
+                {{ pendingInfos(item).length }} 个应用待审
+              </span>
             </div>
           </div>
           <div class="flex-shrink-0 flex gap-1.5">
             <button v-if="!item.enabled" class="bg-green-50 text-green-700 px-3 py-1.5 rounded text-xs cursor-pointer border-0" @click="toggleEnabled(item, true)">启用</button>
             <button v-if="item.enabled" class="bg-red-50 text-red-600 px-3 py-1.5 rounded text-xs cursor-pointer border-0" @click="toggleEnabled(item, false)">禁用</button>
-            <template v-if="activeTab === 'Waiting'">
-              <button class="bg-green-50 text-green-700 px-3 py-1.5 rounded text-xs cursor-pointer border-0" :disabled="!item.enabled" @click="approve(item.hty_id)">通过</button>
-              <button class="bg-red-50 text-red-600 px-3 py-1.5 rounded text-xs cursor-pointer border-0" :disabled="!item.enabled" @click="startReject(item.hty_id)">驳回</button>
-            </template>
           </div>
         </div>
         <!-- Expandable detail -->
         <div v-if="openRows.has(item.hty_id)" class="bg-gray-50 border border-border border-t-0 rounded-b-lg px-4 py-3 -mt-1.5 mb-1.5">
           <div v-if="!item.infos?.length" class="text-center py-4 text-text-muted text-xs">无关联应用</div>
-          <div v-for="info in item.infos" :key="info.id" class="bg-surface rounded-lg p-2.5 mb-2 shadow-sm last:mb-0">
+          <div v-for="info in item.infos" :key="`${info.id}:${info.is_registered}:${info.reject_reason || ''}`" class="bg-surface rounded-lg p-2.5 mb-2 shadow-sm last:mb-0" :data-app-id="info.app_id">
             <div class="flex justify-between items-center mb-1.5">
-              <span class="text-xs font-semibold text-text font-mono">{{ appNameMap[info.app_id] || info.app_id }}</span>
+              <span class="text-xs font-semibold text-text font-mono">{{ appNameMap[info.app_id || ''] || info.app_id }}</span>
               <span :class="['px-2 py-0.5 rounded-full text-xs',
-                info.is_registered ? 'bg-green-50 text-green-700' : 'bg-orange-50 text-orange-800']">
-                {{ info.is_registered ? '已认证' : '未认证' }}
+                info.is_registered ? 'bg-green-50 text-green-700' : info.reject_reason ? 'bg-red-50 text-red-700' : 'bg-orange-50 text-orange-800']">
+                {{ info.is_registered ? '已认证' : info.reject_reason ? '已驳回' : '未认证' }}
               </span>
             </div>
+            <div v-if="info.reject_reason" class="text-xs text-red-600 mb-1.5">驳回原因：{{ info.reject_reason }}</div>
             <div class="flex gap-2 text-xs mb-1">
               <span class="text-text-muted flex-shrink-0">用户名</span>
               <span>{{ info.username || '-' }}</span>
@@ -98,9 +105,25 @@
                 <span v-if="!info.roles?.length" class="text-text-muted">-</span>
               </div>
             </div>
-            <div class="flex gap-1.5 mt-1">
+            <div class="flex gap-1.5 mt-1 flex-wrap">
               <button class="bg-white border border-border px-2.5 py-1 text-xs rounded cursor-pointer text-text-muted hover:bg-gray-50" @click="openEditApp(item, info)">编辑角色</button>
               <button class="bg-white border border-border px-2.5 py-1 text-xs rounded cursor-pointer text-text-muted hover:bg-gray-50" @click="resetPwd(item, info)">重置密码</button>
+              <template v-if="canVerifyInfo(info)">
+                <button
+                  class="bg-green-50 text-green-700 px-2.5 py-1 text-xs rounded cursor-pointer border-0 disabled:opacity-50"
+                  :disabled="!item.enabled || isVerifying(item.hty_id, info.app_id || '')"
+                  data-action="approve-app"
+                  @click="approve(item, info)">
+                  {{ isVerifying(item.hty_id, info.app_id || '') ? '处理中…' : '通过' }}
+                </button>
+                <button
+                  class="bg-red-50 text-red-600 px-2.5 py-1 text-xs rounded cursor-pointer border-0 disabled:opacity-50"
+                  :disabled="!item.enabled || isVerifying(item.hty_id, info.app_id || '')"
+                  data-action="reject-app"
+                  @click="startReject(item.hty_id, info.app_id || '', item.real_name || '')">
+                  驳回
+                </button>
+              </template>
             </div>
           </div>
         </div>
@@ -140,6 +163,9 @@
     <div v-if="showRejectDialog" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50" @click.self="cancelReject">
       <div class="bg-surface rounded-xl p-6 w-[90%] max-w-sm">
         <h3 class="text-base font-semibold mb-3">请输入驳回原因</h3>
+        <p v-if="rejectTargetAppId" class="text-xs text-text-muted mb-2">
+          用户：{{ rejectTargetName || rejectTargetId }} · 应用：{{ appNameMap[rejectTargetAppId] || rejectTargetAppId }}
+        </p>
         <textarea v-model="rejectReason" rows="3" placeholder="驳回原因..."
           class="w-full border border-border rounded-lg p-2.5 text-sm resize-y outline-none focus:border-primary font-inherit"></textarea>
         <div class="flex justify-end gap-2 mt-3">
@@ -153,15 +179,13 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import useUser from '@/store/user'
-
-const { store, read, getAllUsers, approveUser, rejectUser } = useUser()
-const router = useRouter()
 import request from '@/utils/request'
 import useRole from '@/store/role'
 import useApp from '@/store/app'
+import type { HtyUser, HtyUserApp } from '@/types'
 
+const { store, getAllUsers, approveUser, rejectUser } = useUser()
 const { store: roleStore, fetchAll: fetchRoles } = useRole()
 const allRoles = computed(() => roleStore.list)
 const { store: appStore, fetchAll: fetchApps } = useApp()
@@ -174,18 +198,35 @@ const appNameMap = computed(() => {
   return map
 })
 
+function pendingInfos(user: HtyUser): HtyUserApp[] {
+  return (user.infos || []).filter((info) => !info.is_registered && !info.reject_reason)
+}
+
+function rejectedInfos(user: HtyUser): HtyUserApp[] {
+  return (user.infos || []).filter((info) => !info.is_registered && !!info.reject_reason)
+}
+
+function allRegistered(user: HtyUser): boolean {
+  const infos = user.infos || []
+  return infos.length > 0 && infos.every((info) => info.is_registered)
+}
+
+function canVerifyInfo(info: HtyUserApp): boolean {
+  return !info.is_registered && !info.reject_reason
+}
+
 const showEditApp = ref(false)
 const editForm = reactive<{ hty_id: string; user_app_info_id: string; app_id: string; is_registered: boolean }>({
   hty_id: '', user_app_info_id: '', app_id: '', is_registered: true,
 })
 const editRoleIds = ref(new Set<string>())
 
-function openEditApp(user: any, info: any) {
+function openEditApp(user: HtyUser, info: HtyUserApp) {
   editForm.hty_id = user.hty_id
   editForm.user_app_info_id = info.id
   editForm.app_id = info.app_id || ''
   editForm.is_registered = info.is_registered || false
-  editRoleIds.value = new Set((info.roles || []).map((r: any) => r.hty_role_id))
+  editRoleIds.value = new Set((info.roles || []).map((r) => r.hty_role_id))
   fetchRoles()
   showEditApp.value = true
 }
@@ -207,7 +248,7 @@ async function submitEditApp() {
   if (r) { showEditApp.value = false; await fetchData() }
 }
 
-async function toggleEnabled(user: any, enabled: boolean) {
+async function toggleEnabled(user: HtyUser, enabled: boolean) {
   const { r } = await request({
     url: '/api/v1/uc/create_or_update_user_with_info', method: 'POST',
     data: { hty_id: user.hty_id, enabled },
@@ -215,7 +256,7 @@ async function toggleEnabled(user: any, enabled: boolean) {
   if (r) await fetchData()
 }
 
-async function resetPwd(user: any, info: any) {
+async function resetPwd(user: HtyUser, info: HtyUserApp) {
   if (!confirm(`确认重置 ${user.real_name} 在 ${info.app_id} 的密码为 123456？`)) return
   const payload = { id: info.id, hty_id: user.hty_id, app_id: info.app_id, password: '123456' }
   const { r } = await request({ url: '/api/v1/uc/create_or_update_userinfo_with_roles', method: 'POST', data: payload })
@@ -228,6 +269,11 @@ const loading = ref(false)
 const showRejectDialog = ref(false)
 const rejectReason = ref('')
 const rejectTargetId = ref('')
+const rejectTargetAppId = ref('')
+const rejectTargetName = ref('')
+const verifyingKey = ref('')
+const flashMessage = ref('')
+const actionError = ref('')
 const openRows = ref(new Set<string>())
 const sortBy = ref<'name' | 'created_at' | 'status'>('name')
 const sortAsc = ref(true)
@@ -248,17 +294,16 @@ function toggleRow(id: string) {
   openRows.value = new Set(s)
 }
 
-const approvedList = computed(() => store.users.filter((x: any) => x.is_registered))
-const waitingList = computed(() => store.users.filter((x: any) => !x.is_registered && !x.reject_reason))
-const rejectedList = computed(() => store.users.filter((x: any) => !x.is_registered && !!x.reject_reason))
+const approvedList = computed(() => store.users.filter((user) => allRegistered(user)))
+const waitingList = computed(() => store.users.filter((user) => pendingInfos(user).length > 0))
+const rejectedList = computed(() => store.users.filter((user) => rejectedInfos(user).length > 0))
 
 const filteredList = computed(() => {
   let list = activeTab.value === 'Approved' ? approvedList.value
     : activeTab.value === 'Waiting' ? waitingList.value : rejectedList.value
   if (keyword.value && activeTab.value === 'Approved') {
-    list = list.filter((x: any) => x.real_name?.includes(keyword.value))
+    list = list.filter((user) => user.real_name?.includes(keyword.value))
   }
-  // apply sorting
   const sorted = [...list]
   const dir = sortAsc.value ? 1 : -1
   switch (sortBy.value) {
@@ -274,8 +319,8 @@ const filteredList = computed(() => {
       break
     case 'status':
       sorted.sort((a, b) => {
-        const scoreA = (a.enabled ? 2 : 0) + (a.is_registered ? 1 : 0)
-        const scoreB = (b.enabled ? 2 : 0) + (b.is_registered ? 1 : 0)
+        const scoreA = (a.enabled ? 2 : 0) + (allRegistered(a) ? 1 : 0)
+        const scoreB = (b.enabled ? 2 : 0) + (allRegistered(b) ? 1 : 0)
         return dir * (scoreB - scoreA)
       })
       break
@@ -283,26 +328,99 @@ const filteredList = computed(() => {
   return sorted
 })
 
+function isVerifying(userId: string, appId: string): boolean {
+  return verifyingKey.value === `${userId}:${appId}`
+}
+
+function clearFeedbackSoon() {
+  window.setTimeout(() => {
+    flashMessage.value = ''
+    actionError.value = ''
+  }, 4000)
+}
+
+function notifySuccess(message: string) {
+  actionError.value = ''
+  flashMessage.value = message
+  clearFeedbackSoon()
+}
+
+function notifyError(message: string) {
+  flashMessage.value = ''
+  actionError.value = message
+  clearFeedbackSoon()
+}
+
 async function fetchData() {
   loading.value = true
   await Promise.all([getAllUsers(), fetchApps()])
   loading.value = false
 }
 
-async function approve(id: string) { await approveUser(id) }
-function startReject(id: string) { rejectTargetId.value = id; rejectReason.value = ''; showRejectDialog.value = true }
-function cancelReject() { showRejectDialog.value = false; rejectTargetId.value = ''; rejectReason.value = '' }
-async function confirmReject() {
-  if (!rejectReason.value.trim()) return
-  await rejectUser(rejectTargetId.value, rejectReason.value.trim())
-  cancelReject()
+async function approve(user: HtyUser, info: HtyUserApp) {
+  const appId = info.app_id || ''
+  if (!appId) {
+    notifyError('缺少 app_id，无法审核')
+    return
+  }
+  const appLabel = appNameMap.value[appId] || appId
+  verifyingKey.value = `${user.hty_id}:${appId}`
+  actionError.value = ''
+  flashMessage.value = ''
+  const { ok, error } = await approveUser(user.hty_id, appId)
+  verifyingKey.value = ''
+  if (!ok) {
+    notifyError(error || '通过失败')
+    return
+  }
+
+  const stillWaiting = pendingInfos(store.users.find((u) => u.hty_id === user.hty_id) || user).length > 0
+  if (stillWaiting) {
+    notifySuccess(`${user.real_name || '用户'} · ${appLabel} 已通过，仍有其他应用待审`)
+  } else if (activeTab.value === 'Waiting') {
+    openRows.value.delete(user.hty_id)
+    openRows.value = new Set(openRows.value)
+    notifySuccess(`${user.real_name || '用户'} 已全部通过，已从待审核列表移除`)
+  } else {
+    notifySuccess(`${user.real_name || '用户'} · ${appLabel} 已通过`)
+  }
+  await fetchData()
 }
 
-onMounted(async () => {
-  if (!store.currentUser) {
-    const ok = await read()
-    if (!ok) { router.push('/login'); return }
+function startReject(userId: string, appId: string, realName = '') {
+  rejectTargetId.value = userId
+  rejectTargetAppId.value = appId
+  rejectTargetName.value = realName
+  rejectReason.value = ''
+  showRejectDialog.value = true
+}
+
+function cancelReject() {
+  showRejectDialog.value = false
+  rejectTargetId.value = ''
+  rejectTargetAppId.value = ''
+  rejectTargetName.value = ''
+  rejectReason.value = ''
+}
+
+async function confirmReject() {
+  if (!rejectReason.value.trim() || !rejectTargetAppId.value) return
+  const appId = rejectTargetAppId.value
+  const userId = rejectTargetId.value
+  const appLabel = appNameMap.value[appId] || appId
+  verifyingKey.value = `${userId}:${appId}`
+  const { ok, error } = await rejectUser(userId, appId, rejectReason.value.trim())
+  verifyingKey.value = ''
+  if (!ok) {
+    notifyError(error || '驳回失败')
+    return
   }
+  notifySuccess(`${rejectTargetName.value || '用户'} · ${appLabel} 已驳回`)
+  cancelReject()
+  await fetchData()
+}
+
+onMounted(() => {
   fetchData()
 })
 </script>

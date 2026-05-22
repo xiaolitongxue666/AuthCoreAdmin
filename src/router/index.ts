@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { authLog, authWarn, tokenSnapshot } from '@/utils/authLog'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -58,9 +59,17 @@ const router = createRouter({
   ],
 })
 
-router.beforeEach((to, _from, next) => {
+router.beforeEach((to, from, next) => {
   const token = window.localStorage.getItem('Authorization')
+  authLog('router', {
+    from: from.fullPath,
+    to: to.fullPath,
+    name: to.name,
+    hasToken: !!token,
+    ...tokenSnapshot(),
+  })
   if (to.name !== 'login' && to.name !== 'wx-login' && !token) {
+    authWarn('router: blocked, no token → /login')
     next('/login')
   } else {
     next()

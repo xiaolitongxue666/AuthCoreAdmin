@@ -1,7 +1,9 @@
 <template>
   <div id="app-root">
+    <div v-if="initializing" class="init-loading">加载中...</div>
+
     <!-- Login page: no nav -->
-    <router-view v-if="isLoginPage" />
+    <router-view v-else-if="isLoginPage" />
 
     <!-- Authenticated pages: unified nav header -->
     <template v-else>
@@ -21,7 +23,7 @@
           </div>
           <div class="flex items-center gap-3 text-sm">
             <span class="text-text-muted">
-              v20260513
+              v20260522.007
               <template v-if="store.currentUser?.real_name"> | {{ store.currentUser.real_name }}</template>
             </span>
             <button class="text-primary hover:underline bg-transparent border-0 cursor-pointer text-sm" @click="logout">退出</button>
@@ -36,13 +38,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import useUser from '@/store/user'
+import { getToken } from '@/utils/index'
+import { authLog, authWarn, tokenSnapshot } from '@/utils/authLog'
 
 const { store, read, logout, hasAdminAccess } = useUser()
 const route = useRoute()
 const router = useRouter()
+const initializing = ref(true)
 
 const isLoginPage = computed(() => route.name === 'login' || route.name === 'wx-login')
 
@@ -57,16 +62,60 @@ const navRoutes = [
 ]
 
 onMounted(async () => {
-  console.debug('[authcoreadmin] deploy_ver=20260522.002')
-  if (!store.currentUser && route.name !== 'login' && route.name !== 'wx-login') {
-    const ok = await read()
-    if (!ok) {
-      router.push('/login')
-      return
-    }
-    if (!hasAdminAccess()) {
-      logout()
-    }
+  console.log('[authcoreadmin] deploy_ver=20260522.007')
+  await router.isReady()
+
+  authLog('App bootstrap: start', {
+    route: route.name,
+    path: route.path,
+    ...tokenSnapshot(),
+  })
+
+  if (isLoginPage.value) {
+    authLog('App bootstrap: login page, skip auth')
+    initializing.value = false
+    return
   }
+
+  const token = getToken()
+  if (!token) {
+    authWarn('App bootstrap: no token → /login')
+    router.replace('/login')
+    initializing.value = false
+    return
+  }
+
+  const ok = await read()
+  if (!ok) {
+    authWarn('App bootstrap: read failed → /login', tokenSnapshot())
+    router.replace('/login')
+    initializing.value = false
+    return
+  }
+
+  if (!hasAdminAccess()) {
+    authWarn('App bootstrap: no ADMIN → logout', {
+      roles: store.roles.map((r) => r.role_key),
+    })
+    logout('no_admin')
+    return
+  }
+
+  authLog('App bootstrap: ok', {
+    user: store.currentUser?.real_name,
+    roles: store.roles.map((r) => r.role_key),
+  })
+  initializing.value = false
 })
 </script>
+
+<style>
+.init-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  color: #999;
+  font-size: 16px;
+}
+</style>

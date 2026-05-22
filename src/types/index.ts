@@ -20,6 +20,7 @@ export interface HtyUserApp {
   app_id?: string
   hty_id: string
   is_registered: boolean
+  reject_reason?: string
   username?: string
   roles: HtyRole[]
 }

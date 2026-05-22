@@ -11,14 +11,25 @@
 
 <script setup lang="ts">
 import { nextTick, onMounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import { mountWxLoginQr } from '@/utils/wxLogin'
 
+const route = useRoute()
 const error = ref('')
 
 onMounted(() => {
+  const err = route.query.err
+  if (typeof err === 'string') {
+    if (err === 'no_admin') {
+      error.value = '当前微信账号没有 ADMIN 管理员角色，无法进入管理后台'
+    } else {
+      error.value = decodeURIComponent(err)
+    }
+  }
+
   nextTick(() => {
     if (!mountWxLoginQr('login-qr')) {
-      error.value = '微信登录未配置（构建时缺少 WX_APP）'
+      error.value = error.value || '微信登录未配置（构建时缺少 WX_APP）'
     }
   })
 })
