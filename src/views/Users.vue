@@ -206,9 +206,18 @@ function rejectedInfos(user: HtyUser): HtyUserApp[] {
   return (user.infos || []).filter((info) => !info.is_registered && !!info.reject_reason)
 }
 
+function hasRegisteredApp(user: HtyUser): boolean {
+  return (user.infos || []).some((info) => info.is_registered)
+}
+
 function allRegistered(user: HtyUser): boolean {
   const infos = user.infos || []
   return infos.length > 0 && infos.every((info) => info.is_registered)
+}
+
+/** 待审核 Tab：尚无已认证应用的新用户；已有任一应用认证则归入已认证 Tab */
+function isWaitingUser(user: HtyUser): boolean {
+  return pendingInfos(user).length > 0 && !hasRegisteredApp(user)
 }
 
 function canVerifyInfo(info: HtyUserApp): boolean {
@@ -294,8 +303,8 @@ function toggleRow(id: string) {
   openRows.value = new Set(s)
 }
 
-const approvedList = computed(() => store.users.filter((user) => allRegistered(user)))
-const waitingList = computed(() => store.users.filter((user) => pendingInfos(user).length > 0))
+const approvedList = computed(() => store.users.filter((user) => hasRegisteredApp(user)))
+const waitingList = computed(() => store.users.filter((user) => isWaitingUser(user)))
 const rejectedList = computed(() => store.users.filter((user) => rejectedInfos(user).length > 0))
 
 const filteredList = computed(() => {
@@ -319,8 +328,8 @@ const filteredList = computed(() => {
       break
     case 'status':
       sorted.sort((a, b) => {
-        const scoreA = (a.enabled ? 2 : 0) + (allRegistered(a) ? 1 : 0)
-        const scoreB = (b.enabled ? 2 : 0) + (allRegistered(b) ? 1 : 0)
+        const scoreA = (a.enabled ? 2 : 0) + (hasRegisteredApp(a) ? 1 : 0) + (allRegistered(a) ? 1 : 0)
+        const scoreB = (b.enabled ? 2 : 0) + (hasRegisteredApp(b) ? 1 : 0) + (allRegistered(b) ? 1 : 0)
         return dir * (scoreB - scoreA)
       })
       break
