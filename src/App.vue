@@ -23,7 +23,7 @@
           </div>
           <div class="flex items-center gap-3 text-sm">
             <span class="text-text-muted">
-              v20260522.007
+              v20260624.001
               <template v-if="store.currentUser?.real_name"> | {{ store.currentUser.real_name }}</template>
             </span>
             <button class="text-primary hover:underline bg-transparent border-0 cursor-pointer text-sm" @click="logout">退出</button>
@@ -62,7 +62,7 @@ const navRoutes = [
 ]
 
 onMounted(async () => {
-  console.log('[authcoreadmin] deploy_ver=20260522.007')
+  console.log('[authcoreadmin] deploy_ver=20260624.001')
   await router.isReady()
 
   authLog('App bootstrap: start', {

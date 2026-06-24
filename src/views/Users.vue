@@ -29,6 +29,10 @@
       </button>
     </div>
 
+    <p v-if="activeTab === 'Waiting'" class="mb-3 text-xs text-text-muted">
+      展开用户行，在各应用卡片上操作「通过」或「驳回」；行右侧仅「启用/禁用」账号。
+    </p>
+
     <div v-if="activeTab === 'Approved'" class="mb-3">
       <input v-model="keyword" placeholder="搜索用户姓名..."
         class="w-full border border-border rounded-lg px-4 py-2.5 text-sm outline-none focus:border-primary" />
@@ -69,7 +73,7 @@
             <div class="mt-1 flex gap-1.5 flex-wrap">
               <span :class="['inline-block px-2 py-0.5 rounded-full text-xs',
                 item.enabled ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500']">
-                {{ item.enabled ? '已启用' : '未启用' }}
+                {{ item.enabled ? '账号已启用' : '账号未启用' }}
               </span>
               <span v-if="item.union_id" class="inline-block px-2 py-0.5 rounded-full text-xs bg-purple-50 text-purple-700">unionid</span>
               <span v-if="pendingInfos(item).length" class="inline-block px-2 py-0.5 rounded-full text-xs bg-orange-50 text-orange-800">
@@ -77,9 +81,9 @@
               </span>
             </div>
           </div>
-          <div class="flex-shrink-0 flex gap-1.5">
-            <button v-if="!item.enabled" class="bg-green-50 text-green-700 px-3 py-1.5 rounded text-xs cursor-pointer border-0" @click="toggleEnabled(item, true)">启用</button>
-            <button v-if="item.enabled" class="bg-red-50 text-red-600 px-3 py-1.5 rounded text-xs cursor-pointer border-0" @click="toggleEnabled(item, false)">禁用</button>
+          <div class="flex-shrink-0 flex gap-1.5" data-row-actions="account" title="账号级操作">
+            <button v-if="!item.enabled" class="bg-green-50 text-green-700 px-3 py-1.5 rounded text-xs cursor-pointer border-0" @click="toggleEnabled(item, true)">启用账号</button>
+            <button v-if="item.enabled" class="bg-red-50 text-red-600 px-3 py-1.5 rounded text-xs cursor-pointer border-0" @click="toggleEnabled(item, false)">禁用账号</button>
           </div>
         </div>
         <!-- Expandable detail -->
@@ -178,7 +182,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import useUser from '@/store/user'
 import request from '@/utils/request'
 import useRole from '@/store/role'
@@ -428,6 +432,21 @@ async function confirmReject() {
   cancelReject()
   await fetchData()
 }
+
+function expandAllInList(users: HtyUser[]) {
+  openRows.value = new Set(users.map((u) => u.hty_id))
+}
+
+watch(activeTab, (tab) => {
+  if (tab === 'Waiting') {
+    expandAllInList(waitingList.value)
+  } else if (tab === 'Approved') {
+    const partial = approvedList.value.filter((u) => pendingInfos(u).length > 0)
+    if (partial.length > 0 && partial.length <= 5) {
+      expandAllInList(partial)
+    }
+  }
+})
 
 onMounted(() => {
   fetchData()
